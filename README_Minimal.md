@@ -3,7 +3,7 @@
 ![Stage: beta](https://img.shields.io/badge/-alpha-red)
 
 ## Overview
-ofxSurfingSplashScreen is an addon to trig a faded out splash image.
+An **openFrameworks** addon to trig a faded out splash image. Typically when starting an *OF App*.
 
 ## Screenshot
 ![Alt text](/Capture1.gif?raw=true "moebiusSurfing")
