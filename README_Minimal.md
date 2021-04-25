@@ -3,31 +3,35 @@
 ![Stage: beta](https://img.shields.io/badge/-alpha-red)
 
 ## Overview
-ofxSurfingSplashScreen is an addon template for openFrameworks to make other addons.
+ofxSurfingSplashScreen is an addon to trig a faded out splash image.
 
 ## Screenshot
-![Alt text](/Capture1.PNG?raw=true "moebiusSurfing")
+![Alt text](/Capture1.gif?raw=true "moebiusSurfing")
 
 ## Features
-- Faded out.
-- Not multithreading nor drawing on ofApp::setup() for "longer loading" apps.
+- Faded Out.
+- Not multi-threading nor drawing during **ofApp::setup()** for "longer loading" apps.
+- Can be trigged by code.
+- Can disable all other drawings durings splash.
 
 ## Usage
 
 ```		
 void ofApp::setup(){
-// pick your image
-splash.setup("assets/images/Paletto_Banner.png");
+	// pick your image
+	splash.setup("assets/images/Paletto_Banner.png");
 }
 
 void ofApp::draw(){
 {
-if (splash.draw()) return;
-//skip other drawing during splash
+	if (splash.draw()) return;
+	//skip other drawing during splash
+
+	//..
 }
 
 // manual trig splash
-splash.start();
+	splash.start();
 ```
 
 ## Tested systems
