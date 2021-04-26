@@ -17,7 +17,10 @@ An **openFrameworks** addon to trig a faded out splash image. Typically when sta
 
 * Look example.
 
-```		
+```	
+#include "SplashScreen.h"
+SplashScreen splash;
+
 void ofApp::setup(){
 	// pick your image
 	splash.setup("assets/images/Paletto_Banner.png");
@@ -26,12 +29,17 @@ void ofApp::setup(){
 void ofApp::draw(){
 {
 	if (splash.draw()) return;
-	//skip other drawing during splash
+	//can skip other drawing during splash
 }
 
 // manual trig splash
 	splash.start();
 ```
+
+## TODO:
+* Rescale drawing when image is bigger than the window.
+* Add multithreading to allow drawing during slow setups.  
+[ Help on this is welcome! ]
 
 ## Tested systems
 * **Windows 10** / **VS 2017** / **OF ~0.11**
