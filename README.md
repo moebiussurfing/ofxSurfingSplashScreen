@@ -1,12 +1,11 @@
 # ofxSurfingSplashScreen
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Stage: beta](https://img.shields.io/badge/-alpha-red)
 
 ## Overview
 An **openFrameworks** addon to trig a faded out splash image. Typically when starting an *OF App*.
 
 ## Screenshot
-![Alt text](/Capture1.gif?raw=true "moebiusSurfing")
+![Alt text](readme_images/Capture1.gif?raw=true "moebiusSurfing")
 
 ## Features
 - Faded Out.
@@ -15,6 +14,8 @@ An **openFrameworks** addon to trig a faded out splash image. Typically when sta
 - Can disable all other drawings durings splash.
 
 ## Usage
+
+* Look example.
 
 ```		
 void ofApp::setup(){
@@ -26,8 +27,6 @@ void ofApp::draw(){
 {
 	if (splash.draw()) return;
 	//skip other drawing during splash
-
-	//..
 }
 
 // manual trig splash
@@ -40,8 +39,6 @@ void ofApp::draw(){
 ## Author
 An addon by **@moebiusSurfing**  
 *( ManuMolina ) 2021*  
-
-<br/>
 
 ## License
 [**MIT License**](https://github.com/LICENSE)
