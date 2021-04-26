@@ -4,12 +4,12 @@
 ## Overview
 An **openFrameworks** addon to trig a faded out splash image. Typically when starting an *OF App*.
 
-## Screenshot
+## Screencast
 ![Alt text](readme_images/Capture1.gif?raw=true "moebiusSurfing")
 
 ## Features
+- NOT multi-threading nor drawing during **ofApp::setup()** for "longer loading" apps.
 - Faded Out.
-- Not multi-threading nor drawing during **ofApp::setup()** for "longer loading" apps.
 - Can be trigged by code.
 - Can disable all other drawings durings splash.
 
@@ -41,4 +41,4 @@ An addon by **@moebiusSurfing**
 *( ManuMolina ) 2021*  
 
 ## License
-[**MIT License**](https://github.com/LICENSE)
+**MIT License**
