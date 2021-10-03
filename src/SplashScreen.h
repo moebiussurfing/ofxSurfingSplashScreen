@@ -25,6 +25,7 @@ private:
 	std::string path_Image = "-1";
 
 
+	//--------------------------------------------------------------
 	void mousePressed(ofMouseEventArgs &eventArgs)
 	{
 		if (isSplashing()) stop();
@@ -34,6 +35,7 @@ private:
 
 public:
 
+	//--------------------------------------------------------------
 	SplashScreen()
 	{
 		//setup();
@@ -42,27 +44,36 @@ public:
 
 	};
 
+	//--------------------------------------------------------------
 	~SplashScreen()
 	{
 		ofRemoveListener(ofEvents().mousePressed, this, &SplashScreen::mousePressed);
 	};
 
+	//--------------------------------------------------------------
 	void setup(std::string path)
 	{
 		path_Image = path;
 		setup();
 	};
 
+	//--------------------------------------------------------------
 	void setup()
 	{
-		if (path_Image == "-1") imageSplash.load("banner.png"); // data/
-		else imageSplash.load(path_Image);
+		bool bloaded = false;
+		if (path_Image == "-1") bloaded = imageSplash.load("banner.png"); // data/
+		else bloaded = imageSplash.load(path_Image);
 
 		//imageSplash.load("../../../docs/itch.io/Paletto_Banner.png");
 
-		start();
+		if (bloaded) ofLogWarning(__FUNCTION__) << "Image Loaded";
+		else ofLogError(__FUNCTION__) << "Image Not Found!";
+
+		restart();
+		//start();
 	};
 
+	//--------------------------------------------------------------
 	bool draw()
 	{
 		// update
@@ -181,6 +192,7 @@ public:
 		return bSplashing;
 	};
 
+	//--------------------------------------------------------------
 	void drawBlackTransparent() {
 		if (isSplashing())
 		{
@@ -193,6 +205,7 @@ public:
 		}
 	};
 
+	//--------------------------------------------------------------
 	void start() {
 
 		if (bSplashing) { stop(); return; }
@@ -202,7 +215,7 @@ public:
 		//int yy = ofGetHeight() / 2 - imageSplash.getHeight() / 2;
 		//rBorder = ofRectangle(xx, xx, imageSplash.getWidth(), imageSplash.getHeight());
 
-		//splash screen
+		//splashScreen screen
 		splashAlpha = 0.0f;
 		splashAlphaBg = 1.0f;
 		appSplashState = STATE_PLASH_INTRO_STARTED;
@@ -210,6 +223,7 @@ public:
 		bSplashing = true;
 	};
 
+	//--------------------------------------------------------------
 	void stop() {
 		//TODO:
 		uint32_t te = ofGetElapsedTimeMillis() - splashtimer;
@@ -223,8 +237,17 @@ public:
 		splashtimer = 0;
 	}
 
+	//--------------------------------------------------------------
 	bool isSplashing()
 	{
 		return bSplashing;
 	};
+
+	//TODO:
+	//--------------------------------------------------------------
+	void restart() {
+		stop();
+		bSplashing = false;
+		start();
+	}
 };
