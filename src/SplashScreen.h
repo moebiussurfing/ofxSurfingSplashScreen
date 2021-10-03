@@ -69,13 +69,15 @@ public:
 		if (bloaded) ofLogWarning(__FUNCTION__) << "Image Loaded";
 		else ofLogError(__FUNCTION__) << "Image Not Found!";
 
-		restart();
-		//start();
+		//restart();
+		start();
 	};
 
 	//--------------------------------------------------------------
 	bool draw()
 	{
+		if (ofGetFrameNum() == 1) restart();//fix
+
 		// update
 		uint32_t te = ofGetElapsedTimeMillis() - splashtimer;
 
@@ -89,7 +91,7 @@ public:
 
 		//--
 		
-		//define rectangle		
+		// Define rectangle		
 		int xx = ofGetWidth() / 2 - imageSplash.getWidth() / 2;
 		int yy = ofGetHeight() / 2 - imageSplash.getHeight() / 2;
 		rBorder = ofRectangle(xx, yy, imageSplash.getWidth(), imageSplash.getHeight());
@@ -144,7 +146,7 @@ public:
 
 		//-
 
-		// draw
+		// Draw
 
 		if (appSplashState == STATE_PLASH_INTRO_STARTED)
 		{
