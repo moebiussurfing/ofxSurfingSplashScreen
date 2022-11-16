@@ -13,11 +13,15 @@ void ofApp::setup()
 
 	//--
 
-	//splash.setDuration(1000); 
-	//splash.setModeFloating(false); // no floating means window is not resized!
-
 	splash.setup("assets/images/Paletto_Banner.png");
 	//splash.setup("assets/images/Aldous.png");
+
+	//--
+	
+	//splash.setDuration(1000); 
+	
+	// no floating means window is not resized!
+	//splash.setModeFloating(false); 
 }
 
 //--------------------------------------------------------------

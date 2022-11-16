@@ -30,7 +30,8 @@ private:
 	int splashDuration = 3000;//ms
 	bool bDurationForced = false;
 
-	bool bDebug = false;
+	bool bDebug = 0;
+	bool bUseImageBorder= true;
 
 	//--
 
@@ -131,7 +132,7 @@ private:
 			lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
 			SetWindowLong(AppWindow, GWL_EXSTYLE, lExStyle);
 
-			SetWindowPos(AppWindow, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE| SWP_NOZORDER | SWP_NOOWNERZORDER);
+			SetWindowPos(AppWindow, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
 
 			ShowWindow(AppWindow, SW_SHOW);
 		}
@@ -196,6 +197,7 @@ public:
 	//	}
 
 public:
+
 	string getDebugInfo() {
 		string s = "  ";
 		s += bModeFloating ? "FLOATING" : "NON FLOATING";
@@ -211,14 +213,19 @@ public:
 		// fix
 		if (ofGetFrameNum() == 1) restart();
 
+		//--
+
 		// Update
 		uint32_t te = ofGetElapsedTimeMillis() - splashtimer;
 
+		//--
+
 		// Optimize doing return if not
-		if (bSplashing && te > splashDuration)
+		if (bSplashing && te >= splashDuration)
 		{
 			// Finished! Done
 			bSplashing = false;
+
 			splashAlpha = splashAlphaBg = 0;
 			appSplashState = STATE_SPLASH_FINISHED;
 
@@ -228,6 +235,7 @@ public:
 				ofSetWindowShape(_w, _h);
 				ofSetWindowPosition(_x, _y);
 
+				// enable border
 #if defined(TARGET_WIN32)
 				setBorderless(false);
 #endif
@@ -239,9 +247,11 @@ public:
 		//--
 
 		// Define a centered box to draw image
-		int xx = ofGetWidth() * 0.5 - imageSplash.getWidth() * 0.5;
-		int yy = ofGetHeight() * 0.5 - imageSplash.getHeight() * 0.5;
-		rBox = ofRectangle(xx, yy, imageSplash.getWidth(), imageSplash.getHeight());
+		if (!bModeFloating) {
+			int xx = ofGetWidth() * 0.5 - imageSplash.getWidth() * 0.5;
+			int yy = ofGetHeight() * 0.5 - imageSplash.getHeight() * 0.5;
+			rBox = ofRectangle(xx, yy, imageSplash.getWidth(), imageSplash.getHeight());
+		}
 
 		//TODO: 
 		//resize
@@ -255,11 +265,13 @@ public:
 		//	rBox.setHeight(ww * (imageSplash.getHeight()/ imageSplash.getWidth()));
 		//}
 
-		float dec = 0.1;
+		float dec = 0.1f;
 		//float dec = 0.05;
 		//float dec = 1.0f / (60 / 2.0f);
 		//splashDuration / 4 should be the max
 		//float dec = (1.0f / 15) * (splashDuration/1000.0f);//15 frames are a seccond quarter
+
+		//--
 
 		if (bBlackTransparent) drawBlackTransparent();
 
@@ -276,7 +288,7 @@ public:
 					splashAlpha = MIN(splashAlpha, 1);
 				}
 
-				if (!bModeFloating)//skip fade out on this mode 
+				if (!bModeFloating) // skip fade out on this mode 
 				{
 					if (te > splashDuration * 0.7) // fading out
 					{
@@ -289,6 +301,7 @@ public:
 					if (te > splashDuration * 0.8) // bg fading out
 					{
 						splashAlphaBg -= 0.05;
+						splashAlphaBg = MAX(splashAlphaBg, 0);
 					}
 				}
 			}
@@ -336,7 +349,7 @@ public:
 			//--
 
 			// Draw box borders
-			if (!bModeFloating)
+			if (!bModeFloating && bUseImageBorder)
 			{
 				float l = 3.0f;
 				float lh = l / 2.0f;
