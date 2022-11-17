@@ -2,7 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
-An **openFrameworks** addon to trigger a faded-out splash image. Typically when starting an `oF_App`, but working during runtime too.
+An **openFrameworks** addon to trigger a faded-out splash image. Typically when starting an `oF_App`, but working manually during runtime too.
 
 ## Screencast
 
