@@ -104,37 +104,36 @@ private:
 		{
 			// Hide borders
 
-			HWND AppWindow = GetActiveWindow();
+			HWND W = GetActiveWindow();
 
-			LONG lStyle = GetWindowLong(AppWindow, GWL_STYLE);
+			LONG lStyle = GetWindowLong(W, GWL_STYLE);
 			lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
-			SetWindowLong(AppWindow, GWL_STYLE, lStyle);
+			SetWindowLong(W, GWL_STYLE, lStyle);
 
-			LONG lExStyle = GetWindowLong(AppWindow, GWL_EXSTYLE);
+			LONG lExStyle = GetWindowLong(W, GWL_EXSTYLE);
 			lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
-			SetWindowLong(AppWindow, GWL_EXSTYLE, lExStyle);
+			SetWindowLong(W, GWL_EXSTYLE, lExStyle);
 
-			SetWindowPos(AppWindow, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+			SetWindowPos(W, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
 		}
 		else
 		{
 			// Show borders
 
-			HWND AppWindow = GetActiveWindow();
+			HWND W = GetActiveWindow();
 
-			LONG lStyle = GetWindowLong(AppWindow, GWL_STYLE);
-
+			LONG lStyle = GetWindowLong(W, GWL_STYLE);
 			lStyle = WS_OVERLAPPEDWINDOW | WS_THICKFRAME | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 
-			SetWindowLong(AppWindow, GWL_STYLE, lStyle);
+			SetWindowLong(W, GWL_STYLE, lStyle);
 
-			LONG lExStyle = GetWindowLong(AppWindow, GWL_EXSTYLE);
+			LONG lExStyle = GetWindowLong(W, GWL_EXSTYLE);
 			lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
-			SetWindowLong(AppWindow, GWL_EXSTYLE, lExStyle);
+			SetWindowLong(W, GWL_EXSTYLE, lExStyle);
 
-			SetWindowPos(AppWindow, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+			SetWindowPos(W, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
 
-			ShowWindow(AppWindow, SW_SHOW);
+			ShowWindow(W, SW_SHOW);
 		}
 	};
 #endif
@@ -238,6 +237,10 @@ public:
 				// enable border
 #if defined(TARGET_WIN32)
 				setBorderless(false);
+
+				// Disable make app always on top
+				HWND AppWindow = GetActiveWindow();
+				SetWindowPos(AppWindow, HWND_NOTOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
 #endif
 			}
 
@@ -440,6 +443,10 @@ public:
 
 #if defined(TARGET_WIN32)
 			setBorderless(true);
+
+			// Make app always on top
+			HWND AppWindow = GetActiveWindow();
+			SetWindowPos(AppWindow, HWND_TOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
 #endif
 		}
 	};

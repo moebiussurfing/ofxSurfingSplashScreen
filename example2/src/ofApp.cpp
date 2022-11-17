@@ -20,7 +20,7 @@ void ofApp::setup()
 	
 	//splash.setDuration(1000); 
 	
-	// no floating means window is not resized!
+	// (false) no floating means window is not resized nor borderless mode!
 	//splash.setModeFloating(false); 
 }
 
@@ -69,19 +69,20 @@ void ofApp::keyPressed(int key)
 	// Splash!
 	if (key == ' ') splash.start();
 
+	// Debug
 #if defined(TARGET_WIN32)
 	if (key == OF_KEY_F1)
 	{
 		// Make app always on top
-		HWND AppWindow = GetActiveWindow();
-		SetWindowPos(AppWindow, HWND_TOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
+		HWND W = GetActiveWindow();
+		SetWindowPos(W, HWND_TOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
 	}
 
 	if (key == OF_KEY_F2)
 	{
 		// Disable make app always on top
-		HWND AppWindow = GetActiveWindow();
-		SetWindowPos(AppWindow, HWND_NOTOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
+		HWND W = GetActiveWindow();
+		SetWindowPos(W, HWND_NOTOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
 	}
 
 	if (key == OF_KEY_F3)
@@ -94,54 +95,4 @@ void ofApp::keyPressed(int key)
 		splash.setToggleModeFloating();
 	}
 #endif
-}
-
-//--------------------------------------------------------------
-void ofApp::keyReleased(int key) {
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y) {
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseDragged(int x, int y, int button) {
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mousePressed(int x, int y, int button) {
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseReleased(int x, int y, int button) {
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseEntered(int x, int y) {
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseExited(int x, int y) {
-
-}
-
-//--------------------------------------------------------------
-void ofApp::windowResized(int w, int h) {
-
-}
-
-//--------------------------------------------------------------
-void ofApp::gotMessage(ofMessage msg) {
-
-}
-
-//--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo) {
-
 }
