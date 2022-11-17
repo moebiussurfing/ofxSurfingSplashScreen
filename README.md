@@ -2,7 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
-An **openFrameworks** addon to trigger a faded-out splash image. Typically when starting an `oF_App`, but working manually during runtime too.
+An **openFrameworks** add-on to trigger a faded-out splash image. Typically when starting an `oF_App`, but working manually during runtime too.
 
 ## Screencast
 
@@ -13,15 +13,13 @@ An **openFrameworks** addon to trigger a faded-out splash image. Typically when 
 ![](ofxSurfingSplashScreen.gif)
 
 ## Features
-- Floating and borderless mode. (WIN32 Only)
-- Faded Out on non Floating mode.
+- Floating and borderless mode. (`WIN32` Only)
+- Faded Out on non `Floating mode`.
 - Can be triggered by code during runtime.
 - Can disable all other app drawings during splash.
-- NOT multi-threading nor drawing during `setup()` for "longer loading" apps.
+- `NOT multi-threading`, nor drawing during `setup()` for _longer loading_ apps.
 
 ## Usage
-
-* Look example.
 
 ```.cpp	
 #include "ofxSurfingSplashScreen.h"
@@ -49,11 +47,12 @@ void ofApp::draw(){
 	splash.start();
 ```
 
-## TODO:
+### TODO:
 * Fix a small flick when transitioning window sizes on floating mode.
-* Rescale drawing when the image is bigger than the window.
+* Fix: On weird scenarios (retrig when not finished...) causes wrong window sizes.
+* Rescale down drawing when the image is bigger than the window.
 * Add multithreading to allow drawing during slow setups.
-* Add a transparent window using PNGs with alpha.  
+* Add a transparent window on floating mode, using PNGs with alpha.  
 
 ## Tested Systems
 * **Windows 10** / **VS 2017** / **OF ~0.11**
