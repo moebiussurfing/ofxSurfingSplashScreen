@@ -40,8 +40,10 @@ splash.start();
 ```
 
 ## TODO:
+* Fix small flick when transition window sizes on floating mode.
 * Rescale drawing when image is bigger than the window.
-* Add multithreading to allow drawing during slow setups.  
+* Add multithreading to allow drawing during slow setups.
+* Add transparent window using PNGs with alpha.  
 
 ## Tested Systems
 * **Windows 10** / **VS 2017** / **OF ~0.11**
