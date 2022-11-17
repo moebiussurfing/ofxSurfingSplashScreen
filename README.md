@@ -18,7 +18,7 @@ An **openFrameworks** addon to trig a faded out splash image. Typically when sta
 
 * Look example.
 
-```	
+```.cpp	
 #include "ofxSurfingSplashScreen.h"
 ofxSurfingSplashScreen splash;
 
