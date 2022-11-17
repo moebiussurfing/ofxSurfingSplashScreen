@@ -28,7 +28,11 @@ An **openFrameworks** addon to trig a faded out splash image. Typically when sta
 
 ofxSurfingSplashScreen splash;
 
-void ofApp::setup(){
+void ofApp::setup()
+{
+	// Set non floating mode
+	//splash.setModeFloating(false); 
+
 	// Pick your image
 	splash.setup("assets/images/Paletto_Banner.png");
 }
@@ -41,8 +45,8 @@ void ofApp::draw(){
 	/* Draw your scene */
 }
 
-// Manual trig splash
-splash.start();
+	// Manual trig splash
+	splash.start();
 ```
 
 ## TODO:
