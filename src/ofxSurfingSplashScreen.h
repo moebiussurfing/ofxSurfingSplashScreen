@@ -30,8 +30,10 @@ private:
 	int tDuration = 3000;//ms
 	bool bDurationForced = false;
 
-	bool bDebug = 0;
+	bool bDebug = false;
+	bool bHandleInFront = false;
 	bool bUseImageBorder = true;
+	bool bSkipDrawNextFrame = false;//TODO: workaround to skip flick frame
 
 	//--
 
@@ -39,6 +41,7 @@ private:
 	std::string path_Image = "-1";
 
 	float alpha;
+	float alphaBg;
 
 	uint64_t tSplash;
 
@@ -50,14 +53,37 @@ private:
 	MySates appState;
 
 	ofRectangle rBox;//used when non floating to draw into
-	float alphaBg;
 
-	float _x, _y, _w, _h;//original/big/previous window shape
+	float _x, _y, _w, _h;//big/previous start call window shape.
+	float _x_, _y_, _w_, _h_;//window shape when app startup is done.
+	float wImg, hImg;//image shape
 
 	bool bSplashing = false;
-	bool bBlackTransparent = true;
+	bool bBgTransparent = true;
 	bool bNoBorder = false;
 	bool bDoneGetInitWindow = false;
+
+	//--------------------------------------------------------------
+	void doGetWindowState()
+	{
+		// Store previous state
+		_x = ofGetWindowPositionX();
+		_y = ofGetWindowPositionY();
+		_w = ofGetWindowWidth();
+		_h = ofGetWindowHeight();
+		//_y += 28;//workaround to see top bar
+
+		// To set window size as image
+		wImg = imageSplash.getWidth();
+		hImg = imageSplash.getHeight();
+
+		//TODO:
+		// fix workaround
+		// weird offset 
+		// it seems that below ofSetWindowShape do not passes the sizes correctly...
+		wImg -= 16;
+		hImg -= 39;
+	}
 
 public:
 
@@ -208,6 +234,8 @@ public:
 		else
 			ofLogError("ofxSurfingSplashScreen") << "Image Not Found!";
 
+		//--
+
 		start();
 	};
 
@@ -218,9 +246,31 @@ private:
 	//--------------------------------------------------------------
 	void update()
 	{
-		//TODO:
-		// fix
-		if (ofGetFrameNum() == 1) restart();
+		// Startup first frame
+		if (ofGetFrameNum() == 0)
+		{
+			//TODO:
+			// fix
+			restart();
+
+			//--
+
+			// Get and memorize initial window position and shape
+			if (!bDoneGetInitWindow)
+			{
+				bDoneGetInitWindow = true;
+
+				doGetWindowState();
+
+				// init state
+				_x_ = _x;
+				_y_ = _y;
+				_w_ = _w;
+				_h_ = _h;
+			}
+		}
+
+		//--
 
 		if (bDebug) {
 			string s = ofToString(ofGetFrameRate(), 0) + " FPS " + getDebugInfo();
@@ -229,6 +279,7 @@ private:
 
 		//--
 
+		// Elapsed time from the last start
 		uint32_t t = ofGetElapsedTimeMillis() - tSplash;
 
 		//--
@@ -238,24 +289,6 @@ private:
 		{
 			// Finished! Done
 			stop();
-
-			//--
-
-			// Restore big/original size/pos window
-			if (bModeFloating)
-			{
-				ofSetWindowShape(_w, _h);
-				ofSetWindowPosition(_x, _y);
-
-				// enable border back
-#if defined(TARGET_WIN32)
-				setBorderless(false);
-
-				// Disable make app always on top
-				HWND W = GetActiveWindow();
-				SetWindowPos(W, HWND_NOTOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
-#endif
-			}
 		}
 
 		//--
@@ -269,7 +302,7 @@ private:
 		}
 
 		//TODO: 
-		//resize
+		// Image resize down
 		////fit max window size if image is bigger than window
 		////resize rectangle
 		//float ww = ofGetWidth();
@@ -290,6 +323,18 @@ private:
 		//float _dt = (1.0f / 15) * (tDuration/1000.0f);
 		//15 frames are a second quarter
 
+		//TODO: could be calculated to be finished exactly...
+		float _dtBg = 0.05f;
+
+		// calculate only once
+		static bool b = false;
+		if (!b) {
+			b = true;
+			int numFrames = ((0.2f * tDuration) / 1000.f) / (1 / 60.f);
+			_dtBg = 1 / (float)numFrames;
+			cout << "_dtBg:" << _dtBg << endl;
+		}
+
 		//--
 
 		// Update
@@ -297,7 +342,7 @@ private:
 		{
 			if (!bModeFloating)
 			{
-				if (t < tDuration * 0.3) // Fading in
+				if (t < tDuration * 0.3f) // Fading in
 				{
 					alpha += _dt;
 					alpha = MIN(alpha, 1);
@@ -308,16 +353,17 @@ private:
 				// Skip fade out when non floating mode 
 				if (!bModeFloating)
 				{
-					if (t > tDuration * 0.7) // fading out
+					if (t > tDuration * 0.7f) // Fading out
 					{
 						alpha -= _dt;
 						alpha = MAX(alpha, 0);
 					}
 
-					if (t > tDuration * 0.8) // fading out bg
+					if (t > tDuration * 0.8f) // Fading out bg
 					{
-						alphaBg -= 0.05;
+						alphaBg -= _dtBg;
 						alphaBg = MAX(alphaBg, 0);
+						cout << "alphaBg:" << alphaBg << endl;
 					}
 				}
 			}
@@ -333,11 +379,18 @@ public:
 	{
 		update();
 
+		//TODO: workaround to skip flick frame
+		if (bSkipDrawNextFrame)
+		{
+			bSkipDrawNextFrame = false;
+			return bSplashing;
+		}
+
 		//--
 
 		uint32_t t = ofGetElapsedTimeMillis() - tSplash;
 
-		if (bBlackTransparent) drawBlackTransparent();
+		if (bBgTransparent) drawBgTransparent();
 
 		if (appState == STATE_SPLASH_RUNNING)
 		{
@@ -409,7 +462,7 @@ public:
 	};
 
 	//--------------------------------------------------------------
-	void drawBlackTransparent() { // To make the scene a bit darker behind.
+	void drawBgTransparent() { // To make the scene a bit darker behind.
 		if (isSplashing())
 		{
 			ofPushStyle();
@@ -424,14 +477,21 @@ public:
 	//--------------------------------------------------------------
 	void start()
 	{
-		if (bSplashing) { stop(); return; }
+		//--
 
-		// moved to update
-		//int xx = ofGetWidth() / 2 - imageSplash.getWidth() / 2;
-		//int yy = ofGetHeight() / 2 - imageSplash.getHeight() / 2;
-		//rBox = ofRectangle(xx, xx, imageSplash.getWidth(), imageSplash.getHeight());
+		//TODO:
+		// avoid to take sizes if is splashing..
+		if (bModeFloating && !bSplashing) doGetWindowState();
 
-		// splashScreen screen
+		//--
+
+		if (bSplashing) {
+			stop();
+			return;
+		}
+
+		//--
+
 		alpha = 0.0f;
 		alphaBg = 1.0f;
 		appState = STATE_SPLASH_RUNNING;
@@ -440,40 +500,24 @@ public:
 
 		//--
 
-		// set size as image
-		// store pre
 		if (bModeFloating)
 		{
-			// get and memorize init window position and shape
-			if (!bDoneGetInitWindow)
-			{
-				bDoneGetInitWindow = true;
+			// Center
+			float xx = ofGetScreenWidth() * 0.5 - wImg * 0.5;
+			float yy = ofGetScreenHeight() * 0.5 - hImg * 0.5;
 
-				_x = ofGetWindowPositionX();
-				_y = ofGetWindowPositionY();
-				//_y += 28;//workaround to see top bar
-				_w = ofGetWindowWidth();
-				_h = ofGetWindowHeight();
-			}
-
-			float wi = imageSplash.getWidth();
-			float hi = imageSplash.getHeight();
-
-			//TODO:
-			// fix workaround
-			// weird offset 
-			wi -= 16;
-			hi -= 39;
-
-			ofSetWindowPosition(ofGetScreenWidth() * 0.5 - wi * 0.5, ofGetScreenHeight() * 0.5 - hi * 0.5);//center
-			ofSetWindowShape(wi, hi);
+			ofSetWindowPosition(xx, yy);
+			ofSetWindowShape(wImg, hImg);
 
 #if defined(TARGET_WIN32)
 			setBorderless(true);
 
-			// Make app always on top
-			HWND W = GetActiveWindow();
-			SetWindowPos(W, HWND_TOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
+			if (bHandleInFront)
+			{
+				// Make app always on top
+				HWND W = GetActiveWindow();
+				SetWindowPos(W, HWND_TOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
+			}
 #endif
 		}
 	};
@@ -481,15 +525,34 @@ public:
 	//--------------------------------------------------------------
 	void stop()
 	{
-		////TODO:
-		//uint32_t t = ofGetElapsedTimeMillis() - tSplash;
-		//uint32_t tremain = tDuration - t;
-
 		bSplashing = false;
 		appState = STATE_SPLASH_FINISHED;
 		alpha = 0.0f;
 		alphaBg = 0.0f;
 		tSplash = 0;
+
+		//--
+
+		// Restore big/original size/pos window
+		if (bModeFloating)
+		{
+			ofSetWindowShape(_w, _h);
+			ofSetWindowPosition(_x, _y);
+
+			// Enable border back
+#if defined(TARGET_WIN32)
+			setBorderless(false);
+
+			if (bHandleInFront)
+			{
+				// Disable make app always on top
+				HWND W = GetActiveWindow();
+				SetWindowPos(W, HWND_NOTOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
+			}
+#endif
+			//TODO: workaround to skip flick frame
+			bSkipDrawNextFrame = true;
+		}
 	};
 
 	//TODO:
@@ -499,6 +562,8 @@ public:
 		stop();
 		start();
 	};
+
+	//--
 
 	//--------------------------------------------------------------
 	bool isSplashing()

@@ -17,7 +17,7 @@ void ofApp::setup()
 
 	// No floating mode (false) 
 	// means window is not resized nor border less control!
-	splash.setModeFloating(false);
+	//splash.setModeFloating(false);
 
 	//--
 
@@ -28,7 +28,7 @@ void ofApp::setup()
 //--------------------------------------------------------------
 void ofApp::draw()
 {
-	ofClear(c);
+	ofClear(c1);
 
 	if (splash.draw()) return;
 	// Skipped during splashing
@@ -49,14 +49,15 @@ void ofApp::drawScene()
 	float r3 = ofMap(f, 0, d, 0, 1, true) * sz * 0.025;
 	float x = ofGetWidth() * 0.5f;
 	float y = ofGetHeight() * 0.5f;
+	int a = 255;
 
 	ofPushStyle();
 	ofFill();
-	ofSetColor(255, 255);
+	ofSetColor(c2, a);
 	ofDrawCircle(x, y, 0, r1);
-	ofSetColor(c, 255);
+	ofSetColor(c1, a);
 	ofDrawCircle(x, y, 0, r2);
-	ofSetColor(255, 255);
+	ofSetColor(c2, a);
 	ofDrawCircle(x, y, 0, r3);
 	ofPopStyle();
 }

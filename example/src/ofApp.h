@@ -4,7 +4,7 @@
 
 #include "ofxSurfingSplashScreen.h"
 
-class ofApp : public ofBaseApp 
+class ofApp : public ofBaseApp
 {
 public:
 
@@ -12,8 +12,13 @@ public:
 	void draw();
 	void keyPressed(int key);
 
-	void drawScene();
-	ofColor c = ofColor::blue;
-
 	ofxSurfingSplashScreen splash;
+
+	void drawScene();
+
+	ofColor c1 = ofColor::white;
+	//ofColor c1 = ofColor::black;
+
+	ofColor c2 = ofColor::blue;
+	//ofColor c2 = ofColor::yellow;
 };
