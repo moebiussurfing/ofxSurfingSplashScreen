@@ -5,13 +5,18 @@
 An **openFrameworks** addon to trig a faded out splash image. Typically when starting an `oF_App`.
 
 ## Screencast
+
+#### NON FLOATING MODE
+![](ofxSurfingSplashScreen2.gif)
+
+#### FLOATING MODE
 ![](ofxSurfingSplashScreen.gif)
 
 ## Features
-- Floating window and borderless mode. (WIN32 Only)
-- Faded Out on non Floating Window mode.
-- Can be trigged by code during runtime.
-- Can disable all other app drawing during splash.
+- Floating and borderless mode. (WIN32 Only)
+- Faded Out on non Floating mode.
+- Can be triggered by code during runtime.
+- Can disable all other app drawings during splash.
 - NOT multi-threading nor drawing during `setup()` for "longer loading" apps.
 
 ## Usage
@@ -20,6 +25,7 @@ An **openFrameworks** addon to trig a faded out splash image. Typically when sta
 
 ```.cpp	
 #include "ofxSurfingSplashScreen.h"
+
 ofxSurfingSplashScreen splash;
 
 void ofApp::setup(){
@@ -30,7 +36,7 @@ void ofApp::setup(){
 void ofApp::draw(){
 {
 	if (splash.draw()) return;
-	// Can skip other drawing during splash happens
+	// Can skip other drawings during splash 
 
 	/* Draw your scene */
 }
@@ -40,10 +46,10 @@ splash.start();
 ```
 
 ## TODO:
-* Fix small flick when transition window sizes on floating mode.
-* Rescale drawing when image is bigger than the window.
+* Fix a small flick when transitioning window sizes on floating mode.
+* Rescale drawing when the image is bigger than the window.
 * Add multithreading to allow drawing during slow setups.
-* Add transparent window using PNGs with alpha.  
+* Add a transparent window using PNGs with alpha.  
 
 ## Tested Systems
 * **Windows 10** / **VS 2017** / **OF ~0.11**

@@ -27,36 +27,45 @@ private:
 	// make splash floating
 	bool bModeFloating = true;
 
-	int splashDuration = 3000;//ms
+	int tDuration = 3000;//ms
 	bool bDurationForced = false;
 
 	bool bDebug = 0;
-	bool bUseImageBorder= true;
+	bool bUseImageBorder = true;
 
 	//--
 
 	ofImage imageSplash;
-	float splashAlpha;
-	uint32_t splashtimer;
+	std::string path_Image = "-1";
+
+	float alpha;
+
+	uint64_t tSplash;
+
 	enum MySates
 	{
 		STATE_SPLASH_RUNNING = 0,
 		STATE_SPLASH_FINISHED,//idle too
 	};
-	MySates appSplashState;
+	MySates appState;
 
-	bool bSplashing = false;
 	ofRectangle rBox;//used when non floating to draw into
-	bool bBlackTransparent = true;
-	float splashAlphaBg;
-	std::string path_Image = "-1";
+	float alphaBg;
 
 	float _x, _y, _w, _h;//original/big/previous window shape
 
+	bool bSplashing = false;
+	bool bBlackTransparent = true;
 	bool bNoBorder = false;
 	bool bDoneGetInitWindow = false;
 
 public:
+
+	//--------------------------------------------------------------
+	void setDuration(int t) { // in ms.
+		tDuration = t;
+		bDurationForced = true;
+	}
 
 #if defined(TARGET_WIN32)
 	//--------------------------------------------------------------
@@ -71,25 +80,35 @@ public:
 		bModeFloating = !bModeFloating;
 
 		if (!bDurationForced) {
-			if (bModeFloating) splashDuration = 3000;
-			else splashDuration = 4000;
+			if (bModeFloating) tDuration = 3000;
+			else tDuration = 4000;
 		}
 	}
 
 	//--------------------------------------------------------------
-	void setModeFloating(bool b) {//call before setup
+	void setModeFloating(bool b) { // call before setup!
 		bModeFloating = b;
 
 		if (!bDurationForced) {
-			if (bModeFloating) splashDuration = 3000;
-			else splashDuration = 4000;
+			if (bModeFloating) tDuration = 3000;
+			else tDuration = 4000;
 		}
 	}
 
 	//--------------------------------------------------------------
-	void setDuration(int t) { // in ms.
-		splashDuration = t;
-		bDurationForced = true;
+	void setBorderBox(bool b) {//disable extra box border. not the window border. for non floating mode
+		bUseImageBorder = b;
+	}
+
+	//--------------------------------------------------------------
+	void setDebug(bool b) {
+		bDebug = b;
+		if (!bDebug) ofSetWindowTitle("");
+	}
+	//--------------------------------------------------------------
+	void setToggleDebug() {
+		bDebug = !bDebug;
+		if (!bDebug) ofSetWindowTitle("");
 	}
 
 private:
@@ -167,6 +186,7 @@ public:
 	void setup(std::string path)
 	{
 		path_Image = path;
+
 		setup();
 	};
 
@@ -174,83 +194,75 @@ public:
 	void setup()
 	{
 		bool bloaded = false;
-		if (path_Image == "-1") bloaded = imageSplash.load("banner.png"); // data/
-		else bloaded = imageSplash.load(path_Image);
 
-		//imageSplash.load("../../../docs/itch.io/Paletto_Banner.png");
+		//path_Image = "../../../docs/itch.io/Paletto_Banner.png";
+
+		if (path_Image == "-1")
+			bloaded = imageSplash.load("banner.png");
+		// data/banner.png default file. dont requires to call setup()
+		else
+			bloaded = imageSplash.load(path_Image);
 
 		if (bloaded)
-		{
 			ofLogNotice("ofxSurfingSplashScreen") << "Image Loaded";
-		}
-		else ofLogError("ofxSurfingSplashScreen") << "Image Not Found!";
+		else
+			ofLogError("ofxSurfingSplashScreen") << "Image Not Found!";
 
-		//restart();
 		start();
 	};
 
-	//private:
-	//	//--------------------------------------------------------------
-	//	void update()
-	//	{
-	//	}
+	//--
 
-public:
-
-	string getDebugInfo() {
-		string s = "  ";
-		s += bModeFloating ? "FLOATING" : "NON FLOATING";
-		//s += "  ";
-		//s += bNoBorder ? "NO BRODER" : "BORDER";
-		return s;
-	}
+private:
 
 	//--------------------------------------------------------------
-	bool draw()
+	void update()
 	{
 		//TODO:
 		// fix
 		if (ofGetFrameNum() == 1) restart();
 
+		if (bDebug) {
+			string s = ofToString(ofGetFrameRate(), 0) + " FPS " + getDebugInfo();
+			ofSetWindowTitle(s);
+		}
+
 		//--
 
-		// Update
-		uint32_t te = ofGetElapsedTimeMillis() - splashtimer;
+		uint32_t t = ofGetElapsedTimeMillis() - tSplash;
 
 		//--
 
 		// Optimize doing return if not
-		if (bSplashing && te >= splashDuration)
+		if (bSplashing && t >= tDuration)
 		{
 			// Finished! Done
-			bSplashing = false;
+			stop();
 
-			splashAlpha = splashAlphaBg = 0;
-			appSplashState = STATE_SPLASH_FINISHED;
+			//--
 
-			// Restore big/original size window
+			// Restore big/original size/pos window
 			if (bModeFloating)
 			{
 				ofSetWindowShape(_w, _h);
 				ofSetWindowPosition(_x, _y);
 
-				// enable border
+				// enable border back
 #if defined(TARGET_WIN32)
 				setBorderless(false);
 
 				// Disable make app always on top
-				HWND AppWindow = GetActiveWindow();
-				SetWindowPos(AppWindow, HWND_NOTOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
+				HWND W = GetActiveWindow();
+				SetWindowPos(W, HWND_NOTOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
 #endif
 			}
-
-			return bSplashing;
 		}
 
 		//--
 
 		// Define a centered box to draw image
-		if (!bModeFloating) {
+		if (!bModeFloating)
+		{
 			int xx = ofGetWidth() * 0.5 - imageSplash.getWidth() * 0.5;
 			int yy = ofGetHeight() * 0.5 - imageSplash.getHeight() * 0.5;
 			rBox = ofRectangle(xx, yy, imageSplash.getWidth(), imageSplash.getHeight());
@@ -268,53 +280,66 @@ public:
 		//	rBox.setHeight(ww * (imageSplash.getHeight()/ imageSplash.getWidth()));
 		//}
 
-		float dec = 0.1f;
-		//float dec = 0.05;
-		//float dec = 1.0f / (60 / 2.0f);
-		//splashDuration / 4 should be the max
-		//float dec = (1.0f / 15) * (splashDuration/1000.0f);//15 frames are a seccond quarter
-
 		//--
 
-		if (bBlackTransparent) drawBlackTransparent();
+		// Fading speed
+		float _dt = 0.1f;
+		//float _dt = 0.05;
+		//float _dt = 1.0f / (60 / 2.0f);
+		//tDuration / 4 should be the max
+		//float _dt = (1.0f / 15) * (tDuration/1000.0f);
+		//15 frames are a second quarter
 
 		//--
 
 		// Update
-		if (appSplashState == STATE_SPLASH_RUNNING)
+		if (appState == STATE_SPLASH_RUNNING)
 		{
 			if (!bModeFloating)
 			{
-				if (te < splashDuration * 0.3) // fading in
+				if (t < tDuration * 0.3) // Fading in
 				{
-					splashAlpha += dec;
-					splashAlpha = MIN(splashAlpha, 1);
+					alpha += _dt;
+					alpha = MIN(alpha, 1);
 				}
 
-				if (!bModeFloating) // skip fade out on this mode 
+				//--
+
+				// Skip fade out when non floating mode 
+				if (!bModeFloating)
 				{
-					if (te > splashDuration * 0.7) // fading out
+					if (t > tDuration * 0.7) // fading out
 					{
-						splashAlpha -= dec;
-						splashAlpha = MAX(splashAlpha, 0);
+						alpha -= _dt;
+						alpha = MAX(alpha, 0);
 					}
 
-					//--
-
-					if (te > splashDuration * 0.8) // bg fading out
+					if (t > tDuration * 0.8) // fading out bg
 					{
-						splashAlphaBg -= 0.05;
-						splashAlphaBg = MAX(splashAlphaBg, 0);
+						alphaBg -= 0.05;
+						alphaBg = MAX(alphaBg, 0);
 					}
 				}
 			}
 		}
+	}
+
+	//--
+
+public:
+
+	//--------------------------------------------------------------
+	bool draw()
+	{
+		update();
 
 		//--
 
-		// Draw
+		uint32_t t = ofGetElapsedTimeMillis() - tSplash;
 
-		if (appSplashState == STATE_SPLASH_RUNNING)
+		if (bBlackTransparent) drawBlackTransparent();
+
+		if (appState == STATE_SPLASH_RUNNING)
 		{
 			ofPushStyle();
 			ofPushMatrix();
@@ -326,7 +351,7 @@ public:
 
 			// Image
 			int a;
-			if (!bModeFloating) a = 255 * splashAlpha;
+			if (!bModeFloating) a = 255 * alpha;
 			else a = 255;
 			ofSetColor(255, a);
 
@@ -389,7 +414,7 @@ public:
 		{
 			ofPushStyle();
 			ofFill();
-			ofSetColor(0, 240 * splashAlphaBg);
+			ofSetColor(0, 240 * alphaBg);
 			ofRectangle r(0, 0, ofGetWidth(), ofGetHeight());
 			ofDrawRectangle(r);
 			ofPopStyle();
@@ -407,11 +432,13 @@ public:
 		//rBox = ofRectangle(xx, xx, imageSplash.getWidth(), imageSplash.getHeight());
 
 		// splashScreen screen
-		splashAlpha = 0.0f;
-		splashAlphaBg = 1.0f;
-		appSplashState = STATE_SPLASH_RUNNING;
-		splashtimer = ofGetElapsedTimeMillis();
+		alpha = 0.0f;
+		alphaBg = 1.0f;
+		appState = STATE_SPLASH_RUNNING;
+		tSplash = ofGetElapsedTimeMillis();
 		bSplashing = true;
+
+		//--
 
 		// set size as image
 		// store pre
@@ -445,8 +472,8 @@ public:
 			setBorderless(true);
 
 			// Make app always on top
-			HWND AppWindow = GetActiveWindow();
-			SetWindowPos(AppWindow, HWND_TOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
+			HWND W = GetActiveWindow();
+			SetWindowPos(W, HWND_TOPMOST, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE);
 #endif
 		}
 	};
@@ -455,21 +482,14 @@ public:
 	void stop()
 	{
 		////TODO:
-		//uint32_t te = ofGetElapsedTimeMillis() - splashtimer;
-		//uint32_t tremain = splashDuration - te;
+		//uint32_t t = ofGetElapsedTimeMillis() - tSplash;
+		//uint32_t tremain = tDuration - t;
 
-		appSplashState = STATE_SPLASH_FINISHED;
-
-		splashAlpha = 0.0f;
-		splashAlphaBg = 0.0f;
-
-		splashtimer = 0;
-	}
-
-	//--------------------------------------------------------------
-	bool isSplashing()
-	{
-		return bSplashing;
+		bSplashing = false;
+		appState = STATE_SPLASH_FINISHED;
+		alpha = 0.0f;
+		alphaBg = 0.0f;
+		tSplash = 0;
 	};
 
 	//TODO:
@@ -477,7 +497,28 @@ public:
 	//--------------------------------------------------------------
 	void restart() {
 		stop();
-		bSplashing = false;
 		start();
-	}
+	};
+
+	//--------------------------------------------------------------
+	bool isSplashing()
+	{
+		return bSplashing;
+	};
+
+	//--------------------------------------------------------------
+	string getDebugInfo()
+	{
+		string s = "  ";
+
+		s += bModeFloating ? "FLOATING" : "NON FLOATING";
+		s += "  ";
+		s += "alpha:" + ofToString(alpha, 2);
+		s += "  ";
+		s += "alphaBg:" + ofToString(alphaBg, 2);
+		s += "  ";
+		s += "window:" + ofToString(ofGetWidth()) + "x" + ofToString(ofGetHeight());
+
+		return s;
+	};
 };

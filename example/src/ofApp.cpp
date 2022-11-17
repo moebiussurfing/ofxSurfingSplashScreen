@@ -12,23 +12,17 @@ void ofApp::setup()
 	ofSetWindowPosition(50, 50);
 
 	//--
-
-	splash.setup("assets/images/Paletto_Banner.png");
-	//splash.setup("assets/images/Aldous.png");
-
-	//--
 	
 	//splash.setDuration(1000); 
 	
-	// (false) no floating means window is not resized nor borderless mode!
-	//splash.setModeFloating(false); 
-}
+	// No floating mode (false) 
+	// means window is not resized nor border less control!
+	splash.setModeFloating(false); 
 
-//--------------------------------------------------------------
-void ofApp::update() 
-{
-	string s = ofToString(ofGetFrameRate(), 0) + " FPS " + splash.getDebugInfo();
-	ofSetWindowTitle(s);
+	//--
+
+	splash.setup("assets/images/Paletto_Banner.png");
+	//splash.setup("assets/images/Aldous.png");
 }
 
 //--------------------------------------------------------------
@@ -69,6 +63,8 @@ void ofApp::keyPressed(int key)
 	// Splash!
 	if (key == ' ') splash.start();
 
+	//--
+
 	// Debug
 #if defined(TARGET_WIN32)
 	if (key == OF_KEY_F1)
@@ -93,6 +89,10 @@ void ofApp::keyPressed(int key)
 	if (key == OF_KEY_F4)
 	{
 		splash.setToggleModeFloating();
+	}
+	if (key == 'd')
+	{
+		splash.setToggleDebug();
 	}
 #endif
 }
