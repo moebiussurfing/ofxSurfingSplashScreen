@@ -31,7 +31,7 @@ private:
 	bool bDurationForced = false;
 
 	bool bDebug = false;
-	bool bHandleInFront = false;
+	bool bHandleInFront = true;
 	bool bUseImageBorder = true;
 	bool bSkipDrawNextFrame = false;//TODO: workaround to skip flick frame
 
@@ -71,7 +71,14 @@ private:
 		_y = ofGetWindowPositionY();
 		_w = ofGetWindowWidth();
 		_h = ofGetWindowHeight();
-		//_y += 28;//workaround to see top bar
+
+		//TODO: fix
+		//workaround to see top bar
+		//_y += 28;
+
+		//TODO: fix
+		//workaround to correct offset
+		_y -= 0;
 
 		// To set window size as image
 		wImg = imageSplash.getWidth();
@@ -230,14 +237,42 @@ public:
 			bloaded = imageSplash.load(path_Image);
 
 		if (bloaded)
-			ofLogNotice("ofxSurfingSplashScreen") << "Image Loaded";
+			ofLogNotice("ofxSurfingSplashScreen") << "Image loaded.";
 		else
-			ofLogError("ofxSurfingSplashScreen") << "Image Not Found!";
+			ofLogError("ofxSurfingSplashScreen") << "Image file not Found!";
+
+		//--
+
+		//start();
+	};
+
+	//--------------------------------------------------------------
+	void startup()
+	{
+		////TODO:
+		//// fix
+		//restart();
+
+		//--
+
+		// Get and memorize initial window position and shape
+		if (!bDoneGetInitWindow)
+		{
+			bDoneGetInitWindow = true;
+
+			doGetWindowState();
+
+			// init state
+			_x_ = _x;
+			_y_ = _y;
+			_w_ = _w;
+			_h_ = _h;
+		}
 
 		//--
 
 		start();
-	};
+	}
 
 	//--
 
@@ -249,25 +284,7 @@ private:
 		// Startup first frame
 		if (ofGetFrameNum() == 0)
 		{
-			//TODO:
-			// fix
-			restart();
-
-			//--
-
-			// Get and memorize initial window position and shape
-			if (!bDoneGetInitWindow)
-			{
-				bDoneGetInitWindow = true;
-
-				doGetWindowState();
-
-				// init state
-				_x_ = _x;
-				_y_ = _y;
-				_w_ = _w;
-				_h_ = _h;
-			}
+			startup();
 		}
 
 		//--
@@ -284,10 +301,11 @@ private:
 
 		//--
 
-		// Optimize doing return if not
+		// Detects end!
 		if (bSplashing && t >= tDuration)
 		{
-			// Finished! Done
+			// Finished! 
+			// Done
 			stop();
 		}
 
@@ -296,8 +314,8 @@ private:
 		// Define a centered box to draw image
 		if (!bModeFloating)
 		{
-			int xx = ofGetWidth() * 0.5 - imageSplash.getWidth() * 0.5;
-			int yy = ofGetHeight() * 0.5 - imageSplash.getHeight() * 0.5;
+			float xx = ofGetWidth() * 0.5f - imageSplash.getWidth() * 0.5f;
+			float yy = ofGetHeight() * 0.5f - imageSplash.getHeight() * 0.5f;
 			rBox = ofRectangle(xx, yy, imageSplash.getWidth(), imageSplash.getHeight());
 		}
 
@@ -330,9 +348,10 @@ private:
 		static bool b = false;
 		if (!b) {
 			b = true;
-			int numFrames = ((0.2f * tDuration) / 1000.f) / (1 / 60.f);
+			int numFrames = ((0.2f * tDuration) / 1000.f) * 60.f;
 			_dtBg = 1 / (float)numFrames;
-			cout << "_dtBg:" << _dtBg << endl;
+			ofLogNotice("ofxSurfingSplashScreen") << "_dt:" << _dt;
+			ofLogNotice("ofxSurfingSplashScreen") << "_dtBg:" << _dtBg;
 		}
 
 		//--
@@ -359,11 +378,11 @@ private:
 						alpha = MAX(alpha, 0);
 					}
 
-					if (t > tDuration * 0.8f) // Fading out bg
+					if (t > tDuration * 0.8f) // Fading out Bg
 					{
 						alphaBg -= _dtBg;
 						alphaBg = MAX(alphaBg, 0);
-						cout << "alphaBg:" << alphaBg << endl;
+						ofLogNotice("ofxSurfingSplashScreen") << "alphaBg:" << alphaBg;
 					}
 				}
 			}
@@ -435,13 +454,13 @@ public:
 				float l = 3.0f;
 				float lh = l / 2.0f;
 
-				// black
+				// Black
 				ofSetColor(255, a - 25);
 				ofNoFill();
 				ofSetLineWidth(l);
 				ofDrawRectangle(0, 0, rBox.getWidth(), rBox.getHeight());
 
-				// white
+				// White
 				ofSetLineWidth(2.0f);
 				ofSetColor(0, a - 25);
 				ofDrawRectangle(-lh, -lh, rBox.getWidth() + l, rBox.getHeight() + l);
@@ -452,10 +471,36 @@ public:
 			ofPopStyle();
 		}
 
+		//--
+
 		if (bDebug)
 		{
-			string s = ofToString(ofGetWidth()) + "x" + ofToString(ofGetHeight());
-			ofDrawBitmapStringHighlight(s, 4, 14);
+			string s = "";
+			float x, y, w, h;
+			x = 4;
+			y = 14;
+			s += ofToString(ofGetWindowPositionX()) + "," + ofToString(ofGetWindowPositionY());
+			s += "\n";
+			s += ofToString(ofGetWidth()) + "x" + ofToString(ofGetHeight());
+			ofDrawBitmapStringHighlight(s, x, y);
+			
+			static ofBitmapFont f;
+			float wf = f.getBoundingBox(s, 0, 0).getWidth() + 6;
+
+			ofPushStyle();
+			x = 0;
+			y += 20;
+			w = wf;
+			//w = 40;
+			h = 5;
+			int p = 2;
+			float v = ofMap(ofGetElapsedTimeMillis() - tSplash, 0, tDuration, 0, 1, true);
+			ofFill();
+			ofSetColor(0);
+			ofDrawRectangle(x - p, y - p, w + 2 * p, h + 2 * p);
+			ofSetColor(255);
+			ofDrawRectangle(x, y, v * w, h);
+			ofPopStyle();
 		}
 
 		return bSplashing;
@@ -485,6 +530,7 @@ public:
 
 		//--
 
+		//workflow
 		if (bSplashing) {
 			stop();
 			return;
@@ -576,13 +622,15 @@ public:
 	{
 		string s = "  ";
 
-		s += bModeFloating ? "FLOATING" : "NON FLOATING";
+		s += bModeFloating ? "FLOATING_TRUE " : "FLOATING_FALSE";
 		s += "  ";
-		s += "alpha:" + ofToString(alpha, 2);
+		s += "ALPHA:" + ofToString(alpha, 2);
 		s += "  ";
-		s += "alphaBg:" + ofToString(alphaBg, 2);
+		s += "ALPHA_BG:" + ofToString(alphaBg, 2);
 		s += "  ";
-		s += "window:" + ofToString(ofGetWidth()) + "x" + ofToString(ofGetHeight());
+		s += "WIN POS:" + ofToString(ofGetWindowPositionX()) + "," + ofToString(ofGetWindowPositionY());
+		s += "  ";
+		s += "SZ:" + ofToString(ofGetWidth()) + "x" + ofToString(ofGetHeight());
 
 		return s;
 	};
