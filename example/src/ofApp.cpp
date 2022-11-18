@@ -25,7 +25,7 @@ void ofApp::setup()
 		splash.setModeFloating(false);
 
 		splash.setColorBorder1(ofColor(c1, 100));
-		splash.setColorBorder2(0);
+		splash.setColorBorder2(ofColor(ofColor::turquoise, 70));
 	}
 
 	//--
@@ -90,8 +90,11 @@ void ofApp::drawScene()
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key)
 {
-	// Splash!
+	// Splash with timer to hide!
 	if (key == ' ') splash.start();
+
+	// Splash latched! 
+	// Mouse click or trig again to hide!
 	if (key == OF_KEY_RETURN) splash.doToggleLatch();
 
 	//--

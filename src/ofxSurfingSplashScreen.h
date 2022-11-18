@@ -53,9 +53,9 @@ private:
 	bool bDurationForced = false;
 
 	// related to duration
-	float tIn = 0.2f;
-	float tOut1 = 0.8f;
-	float tOut2 = 0.9f;
+	float tIn = 0.08f;//fade in ends
+	float tOut1 = 0.6f;//fade out starts. duration will be the same than fade in!
+	float tOut2 = 0.8f;//fade out Bg starts
 
 	bool bDebug = false;
 	bool bHandleInFront = true;//allows app to front
@@ -345,14 +345,9 @@ private:
 		//--
 
 		// Fading speeds
-
-		//TODO
-		float _dti = ((tDuration * tIn) / 1000.f) * (1.f / 60.f);
-		//fix
-		_dti *= 2;
-
-		float _dtBg = ((tDuration * (1 - tOut2)) / 1000.f) * (1.f / 60.f);
-		//float _dtBg = ((tDuration * (tIn + tOut1 + tOut2)) / 1000.f) * (1.f / 60.f);
+		float _tf = (1000 * ofGetLastFrameTime());//frame duration
+		float _dti = 1.f / ((tDuration * tIn) / _tf);//fade in duration
+		float _dtBg = 1.f / ((tDuration * (1 - tOut2)) / _tf);//fade out bg duration
 
 		//--
 
@@ -360,9 +355,9 @@ private:
 		{
 			alpha = 1.0f;
 			alphaBg = 1.0f;
-			//t = tDuration;//locked time 
+			t = tDuration * tOut1;//locked time 
 
-			return;
+			//return;
 		}
 
 		//--
@@ -400,6 +395,7 @@ private:
 				{
 					appState = SPLASH_FADING_OUT;
 					ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
+					if (alpha < 1) alpha = 1;
 				}
 			}
 		}
@@ -410,7 +406,8 @@ private:
 		{
 			if (!bModeFloating)
 			{
-				if (alpha > 0) {
+				if (alpha > 0)
+				{
 					alpha -= _dti;
 					alpha = MAX(alpha, 0);
 					ofLogNotice("ofxSurfingSplashScreen") << "alpha:" << alpha;
@@ -437,7 +434,8 @@ private:
 			// then both fades can run in parallel.
 			if (!bModeFloating)
 			{
-				if (alpha > 0) {
+				if (alpha > 0)
+				{
 					alpha -= _dti;
 					alpha = MAX(alpha, 0);
 					ofLogNotice("ofxSurfingSplashScreen") << "alpha:" << alpha;
@@ -492,7 +490,7 @@ public:
 
 		if (appState == SPLASH_LATCH)
 		{
-			t = tDuration;//locked time 
+			t = tDuration * tOut1;//locked time 
 		}
 
 		//--
@@ -623,7 +621,7 @@ public:
 
 		if (appState == SPLASH_LATCH)
 		{
-			t = tDuration;//locked time 
+			t = tDuration * tOut1;//locked time 
 		}
 
 		//--
@@ -641,6 +639,7 @@ public:
 		else w = ofGetWidth();
 		h = 5;
 		int p = 2;
+		int p2 = 3;
 		float v = ofMap(t, 0, tDuration, 0, 1, true);
 		ofFill();
 		ofSetColor(0);
@@ -648,22 +647,36 @@ public:
 		ofSetColor(255);
 		ofDrawRectangle(x, y, v * w, h);
 
+		// Time marks
 		ofSetColor(ofColor::red);
 		ofNoFill();
 		float xx;
+		float yy = y + 21;
+		string ss;
 		xx = w * tIn;
 		ofDrawLine(xx, y, xx, y + h);
+		ss = ofToString(tDuration * tIn, 0) + "ms";
+		ofDrawBitmapStringHighlight(ss, xx + p2, yy + 19);
 		xx = w * tOut1;
 		ofDrawLine(xx, y, xx, y + h);
+		ss = ofToString(tDuration * tOut1, 0) + "ms";
+		ofDrawBitmapStringHighlight(ss, xx + p2, yy);
 		xx = w * tOut2;
 		ofDrawLine(xx, y, xx, y + h);
+		ss = ofToString(tDuration * tOut2, 0) + "ms";
+		ofDrawBitmapStringHighlight(ss, xx + p2, yy);
+		ss = ofToString(tDuration, 0) + "ms";
+		static ofBitmapFont f;
+		auto ww = f.getBoundingBox(ss, 0, 0).getWidth();
+		xx = w - ww - 7;
+		ofDrawBitmapStringHighlight(ss, xx + p2, yy);
 
 		// Text info
 		x = 4;
 		y += h;
 		y += 15;
-		string s = ofToString(ofGetFrameRate(), 0) + " FPS " + getDebugInfo();
-		
+		string s = ofToString(ofGetFrameRate(), 0) + ":FPS " + getDebugInfo();
+
 		// left
 		ofDrawBitmapStringHighlight(s, x, y, ofColor(0, 255), ofColor(255, 255));
 
@@ -691,8 +704,22 @@ public:
 	//--------------------------------------------------------------
 	void doToggleLatch()
 	{
-		//if (appState != SPLASH_IDDLE)
-		if (appState == SPLASH_LATCH)
+		//if (appState == SPLASH_LATCH)
+
+		if (appState == SPLASH_IDDLE)
+		{
+			// prepare
+			start();
+
+			// override force
+			//alpha = 1.0f;
+			//alphaBg = 1.0f;
+			//tSplash = ofGetElapsedTimeMillis();//not used
+			//bSplashing = true;
+			appState = SPLASH_LATCH;
+			ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
+		}
+		else
 		{
 			// instant
 			//stop();
@@ -700,19 +727,7 @@ public:
 			// faded
 			stopFaded();
 		}
-		else
-		{
-			start();
-
-			//override force
-			alpha = 1.0f;
-			alphaBg = 1.0f;
-			//tSplash = ofGetElapsedTimeMillis();//not used
-			bSplashing = true;
-			appState = SPLASH_LATCH;
-			ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
-		}
-	}
+	};
 
 	//--------------------------------------------------------------
 	void start()
@@ -726,7 +741,8 @@ public:
 		//--
 
 		//workflow
-		if (bSplashing) {
+		if (bSplashing)
+		{
 			stop();
 			return;
 		}
@@ -779,20 +795,20 @@ public:
 		alpha = 1.0f;
 		alphaBg = 1.0f;
 
-		//appState = SPLASH_FADING_OUT;
-		//tSplash = ofGetElapsedTimeMillis() - tDuration * (1 - tOut1);
+		appState = SPLASH_FADING_OUT;
+		tSplash = ofGetElapsedTimeMillis() + tDuration * tOut1;
 
-		appState = SPLASH_FADING_OUT_BG;
-		tSplash = ofGetElapsedTimeMillis() - tDuration * (1 - tOut2);
+		//appState = SPLASH_FADING_OUT_BG;
+		//tSplash = ofGetElapsedTimeMillis() + (tDuration * tOut2);
 
 		ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
-	}
+	};
 
 	//--------------------------------------------------------------
 	void stop()
 	{
 		appState = SPLASH_IDDLE;
-		//appState = SPLASH_FADING_OUT;//?
+
 		ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
 
 		bSplashing = false;
@@ -851,10 +867,10 @@ public:
 		s += "  ";
 		s += bModeFloating ? "   FLOATING" : "NO_FLOATING";
 		s += "  ";
-		s += "Alpha:" + ofToString(alpha, 2);
-		s += "  ";
 		if (!bModeFloating)
 		{
+			s += "Alpha:" + ofToString(alpha, 2);
+			s += "  ";
 			s += "Bg:" + ofToString(alphaBg, 2);
 			s += "  ";
 		}
@@ -874,5 +890,5 @@ public:
 			AUTO_CASE_CREATE(SPLASH_LATCH);
 		default: return "ERROR!";
 		}
-	}
+	};
 };
