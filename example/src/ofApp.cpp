@@ -14,9 +14,10 @@ void ofApp::setup()
 	//--
 
 	// Customize
-	if (1) // <- Put to 1 or 0
+	// Uncomment to disable
+	//if (0) 
 	{
-		splash.setDebug(true);
+		//splash.setDebug(true);
 
 		//splash.setDuration(4000); 
 
@@ -25,7 +26,7 @@ void ofApp::setup()
 		splash.setModeFloating(false);
 
 		splash.setColorBorder1(ofColor(c1, 100));
-		splash.setColorBorder2(ofColor(ofColor::turquoise, 70));
+		splash.setColorBorder2(ofColor(ofColor::black, 70));
 	}
 
 	//--

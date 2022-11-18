@@ -6,11 +6,14 @@
 
 	TODO
 
-		fix drawing scene also when fading
+	Fix latch mode enters with fade in too.
+	Fix workflow force stop when running.
 
 */
 
+
 //--
+
 
 // Windows management for WIN32
 // https://gist.github.com/MartinBspheroid/8902181
@@ -51,9 +54,10 @@ private:
 
 	int tDuration = 3000;//ms
 	bool bDurationForced = false;
+	uint64_t t;
 
 	// related to duration
-	float tIn = 0.08f;//fade in ends
+	float tIn = 0.1f;//fade in ends
 	float tOut1 = 0.6f;//fade out starts. duration will be the same than fade in!
 	float tOut2 = 0.8f;//fade out Bg starts
 
@@ -339,11 +343,6 @@ private:
 
 		//--
 
-		// Elapsed time from the last start
-		uint32_t t = ofGetElapsedTimeMillis() - tSplash;
-
-		//--
-
 		// Fading speeds
 		float _tf = (1000 * ofGetLastFrameTime());//frame duration
 		float _dti = 1.f / ((tDuration * tIn) / _tf);//fade in duration
@@ -351,12 +350,20 @@ private:
 
 		//--
 
-		if (appState == SPLASH_LATCH)
+		// Elapsed time from the last start
+		t = ofGetElapsedTimeMillis() - tSplash;
+
+		//--
+
+		if (appState == SPLASH_IDDLE)
+		{
+			t = 0;
+		}
+		else if (appState == SPLASH_LATCH)
 		{
 			alpha = 1.0f;
 			alphaBg = 1.0f;
 			t = tDuration * tOut1;//locked time 
-
 			//return;
 		}
 
@@ -486,8 +493,6 @@ public:
 
 		//--
 
-		uint32_t t = ofGetElapsedTimeMillis() - tSplash;
-
 		if (appState == SPLASH_LATCH)
 		{
 			t = tDuration * tOut1;//locked time 
@@ -502,7 +507,6 @@ public:
 		{
 			ofPushStyle();
 			ofPushMatrix();
-			//ofEnableAlphaBlending();
 			{
 				//--
 
@@ -597,7 +601,6 @@ public:
 						ofDrawRectangle(-lh, -lh, rBox.getWidth() + borderLineSz, rBox.getHeight() + borderLineSz);//outer
 				}
 			}
-			//ofDisableAlphaBlending();
 			ofPopMatrix();
 			ofPopStyle();
 		}
@@ -617,25 +620,15 @@ public:
 	//--------------------------------------------------------------
 	void drawDebug()
 	{
-		uint32_t t = ofGetElapsedTimeMillis() - tSplash;
-
-		if (appState == SPLASH_LATCH)
-		{
-			t = tDuration * tOut1;//locked time 
-		}
-
-		//--
-
 		float x, y, w, h;
 
 		ofPushStyle();
-		//ofEnableAlphaBlending();
 
 		// Progress bar
 		x = 0;
 		y = 2;
 		//y += 2;
-		if (bModeFloating) w = wImg;
+		if (bModeFloating && bSplashing) w = wImg;
 		else w = ofGetWidth();
 		h = 5;
 		int p = 2;
@@ -657,19 +650,23 @@ public:
 		ofDrawLine(xx, y, xx, y + h);
 		ss = ofToString(tDuration * tIn, 0) + "ms";
 		ofDrawBitmapStringHighlight(ss, xx + p2, yy + 19);
-		xx = w * tOut1;
-		ofDrawLine(xx, y, xx, y + h);
-		ss = ofToString(tDuration * tOut1, 0) + "ms";
-		ofDrawBitmapStringHighlight(ss, xx + p2, yy);
-		xx = w * tOut2;
-		ofDrawLine(xx, y, xx, y + h);
-		ss = ofToString(tDuration * tOut2, 0) + "ms";
-		ofDrawBitmapStringHighlight(ss, xx + p2, yy);
+		if (!bModeFloating) {
+			xx = w * tOut1;
+			ofDrawLine(xx, y, xx, y + h);
+			ss = ofToString(tDuration * tOut1, 0) + "ms";
+			ofDrawBitmapStringHighlight(ss, xx + p2, yy);
+			xx = w * tOut2;
+			ofDrawLine(xx, y, xx, y + h);
+			ss = ofToString(tDuration * tOut2, 0) + "ms";
+			ofDrawBitmapStringHighlight(ss, xx + p2, yy);
+		}
 		ss = ofToString(tDuration, 0) + "ms";
 		static ofBitmapFont f;
 		auto ww = f.getBoundingBox(ss, 0, 0).getWidth();
 		xx = w - ww - 7;
 		ofDrawBitmapStringHighlight(ss, xx + p2, yy);
+		xx = w - 1;
+		ofDrawLine(xx, y, xx, y + h);
 
 		// Text info
 		x = 4;
@@ -694,7 +691,12 @@ public:
 		{
 			ofPushStyle();
 			ofFill();
-			ofSetColor(0, alphaBgMax * alphaBg);
+			
+			if (appState == SPLASH_STARTED_IN)
+				ofSetColor(0, alphaBgMax * alphaBg * alpha);//improved fade in
+			else 
+				ofSetColor(0, alphaBgMax * alphaBg);//abrupt in
+
 			ofRectangle r(0, 0, ofGetWidth(), ofGetHeight());
 			ofDrawRectangle(r);
 			ofPopStyle();
@@ -704,8 +706,6 @@ public:
 	//--------------------------------------------------------------
 	void doToggleLatch()
 	{
-		//if (appState == SPLASH_LATCH)
-
 		if (appState == SPLASH_IDDLE)
 		{
 			// prepare
@@ -719,13 +719,17 @@ public:
 			appState = SPLASH_LATCH;
 			ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
 		}
-		else
+		else if (appState == SPLASH_LATCH)
 		{
 			// instant
 			//stop();
 
 			// faded
 			stopFaded();
+		}
+		else if (appState == SPLASH_STARTED_IN || appState == SPLASH_FADING_OUT || appState == SPLASH_FADING_OUT_BG)
+		{
+
 		}
 	};
 
@@ -790,13 +794,22 @@ public:
 	//--------------------------------------------------------------
 	void stopFaded()
 	{
+		if (appState == SPLASH_STARTED_IN || appState == SPLASH_FADING_OUT || appState == SPLASH_FADING_OUT_BG)
+		{
+			// by pass call
+			// wait until the last trig finish!
+			return;
+		}
+
 		stop();
 
+		//overwrite
 		alpha = 1.0f;
 		alphaBg = 1.0f;
+		bSplashing = true;
 
 		appState = SPLASH_FADING_OUT;
-		tSplash = ofGetElapsedTimeMillis() + tDuration * tOut1;
+		tSplash = ofGetElapsedTimeMillis() - tDuration * tOut1;
 
 		//appState = SPLASH_FADING_OUT_BG;
 		//tSplash = ofGetElapsedTimeMillis() + (tDuration * tOut2);

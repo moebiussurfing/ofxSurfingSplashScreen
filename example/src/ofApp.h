@@ -17,7 +17,6 @@ public:
 	//--
 
 	void drawScene();
-
 	ofColor c1 = ofColor::blue;
 	ofColor c2 = ofColor::white;
 };
