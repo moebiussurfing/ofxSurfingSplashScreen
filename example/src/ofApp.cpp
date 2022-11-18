@@ -16,7 +16,7 @@ void ofApp::setup()
 	// Customize
 	if (1) // <- Put to 1 or 0
 	{
-		//splash.setDebug(true);
+		splash.setDebug(true);
 
 		//splash.setDuration(4000); 
 
@@ -24,7 +24,7 @@ void ofApp::setup()
 		// means window is not resized nor border less control!
 		splash.setModeFloating(false);
 
-		splash.setColorBorder1(ofColor(c1, 64));
+		splash.setColorBorder1(ofColor(c1, 100));
 		splash.setColorBorder2(0);
 	}
 
@@ -92,7 +92,7 @@ void ofApp::keyPressed(int key)
 {
 	// Splash!
 	if (key == ' ') splash.start();
-	if (key == OF_KEY_RETURN) splash.startLatch();
+	if (key == OF_KEY_RETURN) splash.doToggleLatch();
 
 	//--
 
