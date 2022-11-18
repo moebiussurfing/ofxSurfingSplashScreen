@@ -12,15 +12,37 @@
 
 //--
 
-// WINDOWS MANAGMENT
+// Windows management for WIN32
 // https://gist.github.com/MartinBspheroid/8902181
 // https://github.com/melak47/BorderlessWindow
 // https://stackoverflow.com/questions/2398746/removing-window-border
 
 //--
 
+#define AUTO_CASE_CREATE(a) case a: return #a
+
+namespace ofxSurfingSplash {
+
+	/* Return a linear value in range [0,1] every delay (in seconds). */
+	inline float Tick(float delay = 1.0f) {
+		return fmodf(ofGetElapsedTimeMillis() / 1000.0f, delay) / delay;
+	}
+	/* Return a linear value in range [0,1] every delay (in seconds),
+	 with value equal 0 at boundaries, and 1 at delay / 2. */
+	inline float Bounce(float delay = 1.0f) {
+		return 0.5f * (1.0 + glm::sin(Tick(delay) * glm::two_pi<float>()));
+	}
+	/* Noise function used by the gradient scaling. */
+	inline float Noise(const ofPoint& vertex = ofPoint(1, -1)) {
+		return ofNoise(0.05f * vertex + 0.5f * ofGetElapsedTimeMillis() * 0.002f);
+	}
+}
+
 class ofxSurfingSplashScreen
 {
+
+private:
+
 
 private:
 
@@ -31,9 +53,15 @@ private:
 	bool bDurationForced = false;
 
 	bool bDebug = false;
-	bool bHandleInFront = true;
-	bool bUseImageBorder = true;
+	bool bHandleInFront = true;//allows app to front
 	bool bSkipDrawNextFrame = false;//TODO: workaround to skip flick frame
+
+	bool bUseImageBorder = true;//draws two borders in image box 
+	float borderLineSz = 2.0f;
+	ofColor cb1 = ofColor::white;
+	ofColor cb2 = ofColor::black;
+
+	int alphaBgMax = 215;
 
 	//--
 
@@ -45,12 +73,15 @@ private:
 
 	uint64_t tSplash;
 
-	enum MySates
+	enum SPLASH_STATES
 	{
-		STATE_SPLASH_RUNNING = 0,
-		STATE_SPLASH_FINISHED,//idle too
+		SPLASH_IDDLE = 0,
+		SPLASH_STARTED_IN,
+		SPLASH_FADING_OUT,
+		SPLASH_FADING_OUT_BG,
+		SPLASH_LATCH
 	};
-	MySates appState;
+	SPLASH_STATES appState = SPLASH_IDDLE;
 
 	ofRectangle rBox;//used when non floating to draw into
 
@@ -84,12 +115,12 @@ private:
 		wImg = imageSplash.getWidth();
 		hImg = imageSplash.getHeight();
 
-		//TODO:
-		// fix workaround
-		// weird offset 
-		// it seems that below ofSetWindowShape do not passes the sizes correctly...
-		wImg -= 16;
-		hImg -= 39;
+		////TODO:
+		//// fix workaround
+		//// weird offset 
+		//// it seems that below ofSetWindowShape do not passes the sizes correctly...
+		//wImg -= 16;
+		//hImg -= 39;
 	}
 
 public:
@@ -129,19 +160,30 @@ public:
 	}
 
 	//--------------------------------------------------------------
-	void setBorderBox(bool b) {//disable extra box border. not the window border. for non floating mode
+	void setBorderBox(bool b) {//extra box border.
 		bUseImageBorder = b;
 	}
 
 	//--------------------------------------------------------------
 	void setDebug(bool b) {
 		bDebug = b;
-		if (!bDebug) ofSetWindowTitle("");
+		//if (!bDebug) ofSetWindowTitle("");
 	}
 	//--------------------------------------------------------------
 	void setToggleDebug() {
 		bDebug = !bDebug;
-		if (!bDebug) ofSetWindowTitle("");
+		//if (!bDebug) ofSetWindowTitle("");
+	}
+
+	//--------------------------------------------------------------
+	void setColorBorder1(ofColor c) {
+		cb1 = c;
+		bUseImageBorder = true;
+	}
+	//--------------------------------------------------------------
+	void setColorBorder2(ofColor c) {
+		cb2 = c;
+		bUseImageBorder = true;
 	}
 
 private:
@@ -281,17 +323,12 @@ private:
 	//--------------------------------------------------------------
 	void update()
 	{
+		//-- 
+
 		// Startup first frame
 		if (ofGetFrameNum() == 0)
 		{
 			startup();
-		}
-
-		//--
-
-		if (bDebug) {
-			string s = ofToString(ofGetFrameRate(), 0) + " FPS " + getDebugInfo();
-			ofSetWindowTitle(s);
 		}
 
 		//--
@@ -301,65 +338,60 @@ private:
 
 		//--
 
-		// Detects end!
-		if (bSplashing && t >= tDuration)
-		{
-			// Finished! 
-			// Done
-			stop();
-		}
-
-		//--
-
-		// Define a centered box to draw image
-		if (!bModeFloating)
-		{
-			float xx = ofGetWidth() * 0.5f - imageSplash.getWidth() * 0.5f;
-			float yy = ofGetHeight() * 0.5f - imageSplash.getHeight() * 0.5f;
-			rBox = ofRectangle(xx, yy, imageSplash.getWidth(), imageSplash.getHeight());
-		}
-
-		//TODO: 
-		// Image resize down
-		////fit max window size if image is bigger than window
-		////resize rectangle
-		//float ww = ofGetWidth();
-		//float hh = ofGetHeight();
-		//if (rBox.getWidth()> ww)
-		//{
-		//	rBox.setWidth(ww);
-		//	rBox.setHeight(ww * (imageSplash.getHeight()/ imageSplash.getWidth()));
-		//}
-
-		//--
-
 		// Fading speed
 		float _dt = 0.1f;
+
+		//TODO: could be calculated to be finished exactly...
+
 		//float _dt = 0.05;
 		//float _dt = 1.0f / (60 / 2.0f);
 		//tDuration / 4 should be the max
 		//float _dt = (1.0f / 15) * (tDuration/1000.0f);
 		//15 frames are a second quarter
 
-		//TODO: could be calculated to be finished exactly...
 		float _dtBg = 0.05f;
 
-		// calculate only once
-		static bool b = false;
-		if (!b) {
-			b = true;
-			int numFrames = ((0.2f * tDuration) / 1000.f) * 60.f;
-			_dtBg = 1 / (float)numFrames;
-			ofLogNotice("ofxSurfingSplashScreen") << "_dt:" << _dt;
-			ofLogNotice("ofxSurfingSplashScreen") << "_dtBg:" << _dtBg;
+		// Calculate only once
+		{
+			static bool b = false;
+			if (!b) {
+				b = true;
+				int numFrames = ((0.2f * tDuration) / 1000.f) * 60.f;
+				_dtBg = 1 / (float)numFrames;
+				ofLogNotice("ofxSurfingSplashScreen") << "_dt:" << _dt;
+				ofLogNotice("ofxSurfingSplashScreen") << "_dtBg:" << _dtBg;
+			}
 		}
 
 		//--
 
-		// Update
-		if (appState == STATE_SPLASH_RUNNING)
+		if (appState == SPLASH_LATCH)
 		{
-			if (!bModeFloating)
+			alpha = 1.0f;
+			alphaBg = 1.0f;
+			t = tDuration;//locked time 
+
+			return;
+		}
+
+		//--
+
+		// Detects end!
+		// For any appState
+		if (bSplashing && t >= tDuration)
+		{
+			// Finished! 
+			// Done
+			stop();
+			// appState = SPLASH_IDDLE;
+			//ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
+		}
+
+		//--
+
+		else if (appState == SPLASH_STARTED_IN)
+		{
+			if (!bModeFloating)//fades are disabled on floating mode!
 			{
 				if (t < tDuration * 0.3f) // Fading in
 				{
@@ -370,21 +402,57 @@ private:
 				//--
 
 				// Skip fade out when non floating mode 
-				if (!bModeFloating)
+				//if (!bModeFloating)
 				{
 					if (t > tDuration * 0.7f) // Fading out
 					{
-						alpha -= _dt;
-						alpha = MAX(alpha, 0);
-					}
-
-					if (t > tDuration * 0.8f) // Fading out Bg
-					{
-						alphaBg -= _dtBg;
-						alphaBg = MAX(alphaBg, 0);
-						ofLogNotice("ofxSurfingSplashScreen") << "alphaBg:" << alphaBg;
+						appState = SPLASH_FADING_OUT;
+						ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
 					}
 				}
+			}
+		}
+
+		//--
+
+		else if (appState == SPLASH_FADING_OUT)
+		{
+			if (!bModeFloating)
+				if (alpha > 0) {
+					alpha -= _dt;
+					alpha = MAX(alpha, 0);
+					ofLogNotice("ofxSurfingSplashScreen") << "alpha:" << alpha;
+				}
+
+			if (t >= tDuration * 0.8f) // Fading out Bg
+			{
+				appState = SPLASH_FADING_OUT_BG;
+				ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
+			}
+		}
+
+		//--
+
+		else if (appState == SPLASH_FADING_OUT_BG)
+		{
+			//TODO: fix workaround
+			// we run fade out here too in this state,
+			// bc maybe first fade is not finished, 
+			// then both fades can run in parallel.
+			if (!bModeFloating)
+			{
+				if (alpha > 0) {
+					alpha -= _dt;
+					alpha = MAX(alpha, 0);
+					ofLogNotice("ofxSurfingSplashScreen") << "alpha:" << alpha;
+				}
+			}
+
+			if (!bModeFloating)
+			{
+				alphaBg -= _dtBg;
+				alphaBg = MAX(alphaBg, 0);
+				ofLogNotice("ofxSurfingSplashScreen") << "alphaBg:" << alphaBg;
 			}
 		}
 	}
@@ -398,75 +466,132 @@ public:
 	{
 		update();
 
+		//--
+
 		//TODO: workaround to skip flick frame
 		if (bSkipDrawNextFrame)
 		{
 			bSkipDrawNextFrame = false;
+
 			return bSplashing;
 		}
 
 		//--
 
-		uint32_t t = ofGetElapsedTimeMillis() - tSplash;
-
 		if (bBgTransparent) drawBgTransparent();
 
-		if (appState == STATE_SPLASH_RUNNING)
+		//--
+
+		uint32_t t = ofGetElapsedTimeMillis() - tSplash;
+
+		if (appState == SPLASH_LATCH)
+		{
+			t = tDuration;//locked time 
+		}
+
+		if (appState == SPLASH_STARTED_IN ||
+			appState == SPLASH_FADING_OUT ||
+			appState == SPLASH_FADING_OUT_BG||
+			appState == SPLASH_LATCH)
 		{
 			ofPushStyle();
 			ofPushMatrix();
-			ofEnableAlphaBlending();
-
-			if (!bModeFloating) ofTranslate(rBox.getX(), rBox.getY());
-
-			//float a = ofWrap(sin(ofGetElapsedTimef()), 0, 1);
-
-			// Image
-			int a;
-			if (!bModeFloating) a = 255 * alpha;
-			else a = 255;
-			ofSetColor(255, a);
-
-			//TODO:
-			//// Fit max window size if image is bigger than window
-			//float ww = ofGetWidth();
-			//float hh = ofGetHeight();
-			//if (ww > imageSplash.getWidth() || hh > imageSplash.getHeight()) {
-			//	imageSplash.draw(0, 0, ww, hh);
-			//}
-			//else imageSplash.draw(0, 0);
-
-			// Original size
-			imageSplash.draw(0, 0);
-
-			//// Fix workaround 
-			//// bc it seems that some spaces (top bar? borders?) are not being counted!
-			// breaks aspect ratio!
-			//// Force Fit
-			//auto rView = ofGetCurrentViewport();
-			//imageSplash.draw(rView);
-
-			//--
-
-			// Draw box borders
-			if (!bModeFloating && bUseImageBorder)
+			//ofEnableAlphaBlending();
 			{
-				float l = 3.0f;
-				float lh = l / 2.0f;
+				//--
 
-				// Black
-				ofSetColor(255, a - 25);
-				ofNoFill();
-				ofSetLineWidth(l);
-				ofDrawRectangle(0, 0, rBox.getWidth(), rBox.getHeight());
+				// Define a centered box to draw image
+				//if (!bModeFloating)
+				{
+					float xx = ofGetWidth() * 0.5f - wImg * 0.5f;
+					float yy = ofGetHeight() * 0.5f - hImg * 0.5f;
+					rBox = ofRectangle(xx, yy, wImg, hImg);
+				}
 
-				// White
-				ofSetLineWidth(2.0f);
-				ofSetColor(0, a - 25);
-				ofDrawRectangle(-lh, -lh, rBox.getWidth() + l, rBox.getHeight() + l);
+				//TODO: 
+				// Image resize down
+				////fit max window size if image is bigger than window
+				////resize rectangle
+				//float ww = ofGetWidth();
+				//float hh = ofGetHeight();
+				//if (rBox.getWidth()> ww)
+				//{
+				//	rBox.setWidth(ww);
+				//	rBox.setHeight(ww * (imageSplash.getHeight()/ imageSplash.getWidth()));
+				//}
+
+				//--
+
+				if (!bModeFloating) ofTranslate(rBox.getX(), rBox.getY());
+
+				int a;
+				if (!bModeFloating) a = 255 * alpha;
+				else a = 255;
+
+				//fades are disabled on floating mode!
+				// //a = 255 * alpha;
+				//if (bModeFloating) ofClear(0, 255);
+
+				ofSetColor(255, a);
+
+				//--
+
+				// Draw Image
+
+				//TODO:
+				//// Fit max window size if image is bigger than window
+				//float ww = ofGetWidth();
+				//float hh = ofGetHeight();
+				//if (ww > imageSplash.getWidth() || hh > imageSplash.getHeight()) {
+				//	imageSplash.draw(0, 0, ww, hh);
+				//}
+				//else imageSplash.draw(0, 0);
+
+				// Original size
+				imageSplash.draw(0, 0);
+
+				//// Fix workaround 
+				//// bc it seems that some spaces (top bar? borders?) are not being counted!
+				// breaks aspect ratio!
+				//// Force Fit
+				//auto rView = ofGetCurrentViewport();
+				//imageSplash.draw(rView);
+
+				//--
+
+				// Draw box borders
+				//if (!bModeFloating && bUseImageBorder)
+				if (bUseImageBorder)
+				{
+					float lh = borderLineSz / 2.0f;
+
+					ofNoFill();
+
+					// Blink
+					float _a = ofMap(ofxSurfingSplash::Bounce(.75), 0, 1, 0.65, 1, true);
+
+					// Black
+					int _a2 = cb2.a * _a;
+					if (!bModeFloating) _a2 = ofClamp(cb2.a * alpha * _a, 0, 225);
+					ofSetColor(cb2, _a2);
+					ofSetLineWidth(borderLineSz);
+					if (bModeFloating)
+						ofDrawRectangle(lh, lh, wImg - borderLineSz, hImg - borderLineSz);//inner
+					else
+						ofDrawRectangle(0, 0, rBox.getWidth(), rBox.getHeight());//outer
+
+					// White
+					int _a1 = cb1.a * _a;
+					if (!bModeFloating) _a1 = ofClamp(cb1.a * alpha * _a, 0, 225);
+					ofSetColor(cb1, _a1);
+					ofSetLineWidth(borderLineSz);
+					if (bModeFloating)
+						ofDrawRectangle(borderLineSz, borderLineSz, wImg - 2 * borderLineSz, hImg - 2 * borderLineSz);//inner
+					else
+						ofDrawRectangle(-lh, -lh, rBox.getWidth() + borderLineSz, rBox.getHeight() + borderLineSz);//outer
+				}
 			}
-
-			ofDisableAlphaBlending();
+			//ofDisableAlphaBlending();
 			ofPopMatrix();
 			ofPopStyle();
 		}
@@ -475,33 +600,37 @@ public:
 
 		if (bDebug)
 		{
-			string s = "";
 			float x, y, w, h;
-			x = 4;
-			y = 14;
-			s += ofToString(ofGetWindowPositionX()) + "," + ofToString(ofGetWindowPositionY());
-			s += "\n";
-			s += ofToString(ofGetWidth()) + "x" + ofToString(ofGetHeight());
-			ofDrawBitmapStringHighlight(s, x, y);
-			
-			static ofBitmapFont f;
-			float wf = f.getBoundingBox(s, 0, 0).getWidth() + 6;
 
 			ofPushStyle();
+			//ofEnableAlphaBlending();
+
+			// Progress bar
 			x = 0;
-			y += 20;
-			w = wf;
-			//w = 40;
+			y = 2;
+			//y += 2;
+			if (bModeFloating) w = wImg;
+			else w = ofGetWidth();
 			h = 5;
 			int p = 2;
-			float v = ofMap(ofGetElapsedTimeMillis() - tSplash, 0, tDuration, 0, 1, true);
+			float v = ofMap(t, 0, tDuration, 0, 1, true);
 			ofFill();
 			ofSetColor(0);
 			ofDrawRectangle(x - p, y - p, w + 2 * p, h + 2 * p);
 			ofSetColor(255);
 			ofDrawRectangle(x, y, v * w, h);
+
+			// Text info
+			x = 4;
+			y += h;
+			y += 15;
+			string s = ofToString(ofGetFrameRate(), 0) + " FPS " + getDebugInfo();
+			ofDrawBitmapStringHighlight(s, x, y, ofColor(0, 255), ofColor(255, 255));
+
 			ofPopStyle();
 		}
+
+		//--
 
 		return bSplashing;
 	};
@@ -512,12 +641,33 @@ public:
 		{
 			ofPushStyle();
 			ofFill();
-			ofSetColor(0, 240 * alphaBg);
+			ofSetColor(0, alphaBgMax * alphaBg);
 			ofRectangle r(0, 0, ofGetWidth(), ofGetHeight());
 			ofDrawRectangle(r);
 			ofPopStyle();
 		}
 	};
+
+	//--------------------------------------------------------------
+	void startLatch()
+	{
+		if (appState == SPLASH_LATCH)
+		{
+			stop();
+		}
+		else
+		{
+			start();
+
+			//override force
+			alpha = 1.0f;
+			alphaBg = 1.0f;
+			tSplash = ofGetElapsedTimeMillis();//not used
+			bSplashing = true;
+			appState = SPLASH_LATCH;
+			ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
+		}
+	}
 
 	//--------------------------------------------------------------
 	void start()
@@ -540,9 +690,10 @@ public:
 
 		alpha = 0.0f;
 		alphaBg = 1.0f;
-		appState = STATE_SPLASH_RUNNING;
 		tSplash = ofGetElapsedTimeMillis();
 		bSplashing = true;
+		appState = SPLASH_STARTED_IN;
+		ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
 
 		//--
 
@@ -553,8 +704,15 @@ public:
 			float yy = ofGetScreenHeight() * 0.5 - hImg * 0.5;
 
 			ofSetWindowPosition(xx, yy);
-			ofSetWindowShape(wImg, hImg);
 
+			//ofSetWindowShape(wImg, hImg);
+			//TODO:
+			// fix workaround
+			// weird offset 
+			// it seems that below ofSetWindowShape do not passes the sizes correctly...
+			ofSetWindowShape(wImg - 16, hImg - 39);
+
+			// Disable border
 #if defined(TARGET_WIN32)
 			setBorderless(true);
 
@@ -571,8 +729,11 @@ public:
 	//--------------------------------------------------------------
 	void stop()
 	{
+		appState = SPLASH_IDDLE;
+		//appState = SPLASH_FADING_OUT;
+		ofLogNotice("ofxSurfingSplashScreen") << "STATE:" << stringForState(appState);
+
 		bSplashing = false;
-		appState = STATE_SPLASH_FINISHED;
 		alpha = 0.0f;
 		alphaBg = 0.0f;
 		tSplash = 0;
@@ -622,16 +783,34 @@ public:
 	{
 		string s = "  ";
 
-		s += bModeFloating ? "FLOATING_TRUE " : "FLOATING_FALSE";
+		s += "Pos:" + ofToString(ofGetWindowPositionX()) + "," + ofToString(ofGetWindowPositionY());
 		s += "  ";
-		s += "ALPHA:" + ofToString(alpha, 2);
+		s += "Sz:" + ofToString(ofGetWidth()) + "x" + ofToString(ofGetHeight());
 		s += "  ";
-		s += "ALPHA_BG:" + ofToString(alphaBg, 2);
+		s += bModeFloating ? "   FLOATING" : "NO_FLOATING";
 		s += "  ";
-		s += "WIN POS:" + ofToString(ofGetWindowPositionX()) + "," + ofToString(ofGetWindowPositionY());
+		s += "Alpha:" + ofToString(alpha, 2);
 		s += "  ";
-		s += "SZ:" + ofToString(ofGetWidth()) + "x" + ofToString(ofGetHeight());
-
+		if (!bModeFloating)
+		{
+			s += "Bg:" + ofToString(alphaBg, 2);
+			s += "  ";
+		}
+		//s += "  ";
+		//s += bSplashing ? "SPLASHING" : "         ";
+		s += "#" + ofToString(appState) + "_" + stringForState(appState);
 		return s;
 	};
+
+	//--------------------------------------------------------------
+	std::string stringForState(SPLASH_STATES m) {
+		switch (m) {
+			AUTO_CASE_CREATE(SPLASH_IDDLE);
+			AUTO_CASE_CREATE(SPLASH_STARTED_IN);
+			AUTO_CASE_CREATE(SPLASH_FADING_OUT);
+			AUTO_CASE_CREATE(SPLASH_FADING_OUT_BG);
+			AUTO_CASE_CREATE(SPLASH_LATCH);
+		default: return "ERROR!";
+		}
+	}
 };

@@ -13,13 +13,20 @@ void ofApp::setup()
 
 	//--
 
-	//splash.setDuration(1000); 
+	// Customize
+	if (1) // <- Put to 1 or 0
+	{
+		//splash.setDebug(true);
 
-	// No floating mode (false) 
-	// means window is not resized nor border less control!
-	//splash.setModeFloating(false);
+		//splash.setDuration(4000); 
 
-	splash.setDebug(true);
+		// No floating mode (false) 
+		// means window is not resized nor border less control!
+		splash.setModeFloating(false);
+
+		splash.setColorBorder1(ofColor(c1, 64));
+		splash.setColorBorder2(0);
+	}
 
 	//--
 
@@ -32,12 +39,20 @@ void ofApp::draw()
 {
 	ofClear(c1);
 
-	if (splash.draw()) return;
-	// Skipped during splashing
+	// B.
+	// Draw under (before) the Scene
+	//if (splash.draw()) return;
+	//// Skipped during splashing
 
 	//--
 
 	drawScene();
+
+	//--
+
+	// A.
+	// Draw on top (after) the Scene
+	splash.draw();
 }
 
 //--------------------------------------------------------------
@@ -48,71 +63,36 @@ void ofApp::drawScene()
 	float y = ofGetHeight() * 0.5f;
 	int a = 255;
 
-	// a.
-	//const int d = 30;
-	//int f = ofGetFrameNum() % d;
-	//float r0 = ofMap(f, 0, d, 0, 1, true);
+	// kind of sinus 
+	float r0 = 0.75 + 0.5f * (1.0 + glm::sin(fmodf(ofGetElapsedTimeMillis() / 1000.0f, 1.f)
+		/ 1.f * glm::two_pi<float>()));
 
-	// b.
-	float r0 = 0.75 + Bounce();
-	//float r0 = Noise() * 0.75 + Bounce();
-	//float r0 = Noise();
+	ofPushStyle();
+	ofFill();
 
-	/*
+	int amt = 10;
+	float _d = 1;
+	float d0 = 1.f / (float)amt;
+
+	for (int i = 0; i < amt; i++)
 	{
-		ofPushStyle();
-		ofFill();
+		_d = _d - d0;
+		float _r = r0 * sz * _d;
 
-		float r1 = r0 * sz;
-		float r2 = r0 * sz * 0.2;
-		float r3 = r0 * sz * 0.025;
-		float r4 = r0 * sz * 0.005;
-
-		ofSetColor(c2, a);
-		ofDrawCircle(x, y, 0, r1);
-		ofSetColor(c1, a);
-		ofDrawCircle(x, y, 0, r2);
-		ofSetColor(c2, a);
-		ofDrawCircle(x, y, 0, r3);
-		ofSetColor(c1, a);
-		ofDrawCircle(x, y, 0, r4);
-
-		ofPopStyle();
+		bool _b = (i % 2 == 0);//odd/even
+		ofSetColor(_b ? c1 : c2, a);
+		ofDrawCircle(x, y, 0, _r);
 	}
-	*/
 
-	///*
-	{
-		ofPushStyle();
-		ofFill();
-
-		//int amt = 100 * Noise();
-		int amt = 10;
-		float _d = 1;
-		float d0 = 1.f / (float)amt;
-		//float d0 = 1.f / ((float)amt * Noise());
-
-		for (int i = 0; i < amt; i++)
-		{
-			_d = _d - d0;
-			float _r = r0 * sz * _d;
-
-			bool _b = (i % 2 == 0);//odd/even
-			ofSetColor(_b ? c1 : c2, a);
-			ofDrawCircle(x, y, 0, _r);
-		}
-
-		ofPopStyle();
-	}
-	//*/
+	ofPopStyle();
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key)
 {
 	// Splash!
-
 	if (key == ' ') splash.start();
+	if (key == OF_KEY_RETURN) splash.startLatch();
 
 	//--
 
