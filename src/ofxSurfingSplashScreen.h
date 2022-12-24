@@ -72,6 +72,11 @@ private:
 
 	int alphaBgMax = 215;
 
+public:
+	void setAlphaBgMax(int a = 215){ alphaBgMax = a; }
+
+private:
+
 	//--
 
 	ofImage imageSplash;
